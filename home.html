@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Chat App Dashboard</title>
+    <link rel="shortcut icon" href="#">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 40px;
+            background-color: whitesmoke;
+        }
+
+        .messageDiv {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: aquamarine;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        #messageList {
+            margin: 0;
+            padding: 0;
+        }
+
+        #messageList li {
+            padding: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h2>Chat App</h2>
+    </header>
+
+    <div class="messageDiv">
+        <ul id="messageList">
+            <li>first</li>
+            <li>second</li>
+            <li>third</li>
+        </ul>
+    </div>
+</body>
+
+</html>
