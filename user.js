@@ -1,5 +1,6 @@
 const Signup = require('../model/user');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 exports.postAddSignup = async (req, res, next) => {
     try {
@@ -43,42 +44,45 @@ exports.postAddSignup = async (req, res, next) => {
     }
 }
 
-// exports.getTodo = async (req, res) => {
-//     try {
-//         const id = req.params.id;
-//         console.log('getTodo id = ' + id);
+exports.postLogin = async (req, res) => {
+    try {
+        const userinputEmail = req.body.email;
+        const userinputPassword = req.body.password;
+        console.log('userinputEmail = ' + userinputEmail);
+        console.log('userinputPassword = ' + userinputPassword);
 
-//         const particularTodo = await Todo.findOne({ where: { id: id } });
-//         console.log('particularTodo = ' + JSON.stringify(particularTodo));
+        const particularUser = await Signup.findOne({ where: { email: userinputEmail } });
+        console.log('particularUser = ' + JSON.stringify(particularUser));
+        if (!particularUser) { // Check if the user exists
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
 
-//         if (!particularTodo) {
-//             return res.status(400).json({ message: 'Todo not found' });
-//         }
-//         res.status(200).json({ particularTodoData: particularTodo });
+        console.log('particularUser email = ' + particularUser.email);
+        console.log('particularUser password = ' + particularUser.password);
 
-//     } catch (err) {
-//         console.log("error = " + JSON.stringify(err));
-//         res.status(500).json({ message: 'Failed to get todo' })
-//     }
-// }
 
-// exports.deleteTodo = async (req, res) => {
-//     try {
-//         const id = req.params.id;
-//         console.log('deleteTodo id = ' + id);
+        bcrypt.compare(userinputPassword, particularUser.password, (error, response) => {
+            console.log('response = ' + response);
+            console.log('error = ' + error);
 
-//         const particularTodo = await Todo.findAll({ where: { id: id } });
-//         console.log('particularTodo = ' + JSON.stringify(particularTodo));
-//         if (!particularTodo) {
-//             return res.status(400).json({ message: 'Todo not found' });
-//         }
+            if (error) {
+                console.log(err);
+                return res.status(403).json({ message: 'Something went wrong' });
+            }
+            if (response) {
 
-//         //delete todo
-//         await Todo.destroy({ where: { id: id } });
-//         res.status(200).json({ message: 'Todo deleted successfully' });
+                return res.status(201).json({ userDetails: particularUser, message: 'Successfully Logged In', token: generateWebToken(particularUser.id) });
+            } else
+                return res.status(401).json({ message: 'Password do not match' });
+        });
 
-//     } catch (err) {
-//         console.log("error = " + JSON.stringify(err));
-//         res.status(500).json({ message: 'Failed to delete todo' });
-//     }
-// }
+
+    } catch (err) {
+        console.log("error = " + JSON.stringify(err));
+        res.status(500).json({ message: 'Failed to get user' })
+    }
+}
+
+function generateWebToken(id) {
+    return jwt.sign({ userid: id }, 'secretkey');
+}
