@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>WhatsApp Home Page</title>
+    <link rel="stylesheet" href="whatsappHome.css">
+    <link rel="shortcut icon" href="#">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <h2>WhatsApp</h2>
+    </header>
+
+    <div class="main-container">
+        <div class="group-list">
+            <h3>Group Chats</h3>
+            <button id="loadPopupbutton" type="button" onclick="loadCreateGroupPopupAndGetData()">Create New
+                Group</button>
+            <ol id="groupList"></ol>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <h3>Select a group to view chat</h3>
+            <div id="chatContent"></div>
+            <div class="chatDiv">
+                <form id="chatForm">
+                    <lable>Enter Chat</lable>
+                    <input type="text" id="userChat" placeholder="Enter Text">
+                    <button type="submit">Send Chat</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="overlay"></div>
+
+    <div id="groupPopup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+            <h3>Create New Group</h3>
+            <form id="groupForm">
+                <label for="groupName">Group Name:</label><br>
+                <input type="text" id="groupName" name="groupName" placeholder="Enter Group Name"><br><br>
+                <label>Choose contacts for Group:</label><br>
+                <div id="contactList" class="scrollable-container"></div>
+                <button type="button" onclick="createGroup()">Create Group</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="whatsappHome.js"> </script>
+</body>
+
+</html>
