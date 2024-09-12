@@ -25,15 +25,24 @@
 
         <div class="chat-area" id="chatArea">
             <h3>Select a group to view chat</h3>
-            <div id="chatContent"></div>
-            <div class="chatDiv">
-                <form id="chatForm">
-                    <lable>Enter Chat</lable>
-                    <input type="text" id="userChat" placeholder="Enter Text">
-                    <button type="submit">Send Chat</button>
-                </form>
+
+            <div class="button-container">
+                <button id="removeContactBtn" onclick="loadRemoveContactPopup()">Remove Contact</button>
+                <button id="removeContactBtn" onclick="loadAddContactPopup()">Add Contact</button>
+                <button id="addAdminBtn" onclick="loadAddAdminPopup()">Make Admin</button>
             </div>
+
+            <div id="chatContent"></div>
         </div>
+    </div>
+
+
+    <div class="chatDiv">
+        <form id="chatForm">
+            <lable>Enter Chat</lable>
+            <input type="text" id="userChat" placeholder="Enter Text">
+            <button type="submit">Send Chat</button>
+        </form>
     </div>
 
     <div id="overlay" class="overlay"></div>
@@ -48,6 +57,42 @@
                 <label>Choose contacts for Group:</label><br>
                 <div id="contactList" class="scrollable-container"></div>
                 <button type="button" onclick="createGroup()">Create Group</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="removeContactPopup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closeRemoveContactPopup()">&times;</span>
+            <h3>Remove Contacts from Group</h3>
+            <form id="removeContactForm">
+                <label>Select contacts to remove:</label><br>
+                <div id="removeContactList" class="scrollable-container"></div>
+                <button type="button" onclick="removeSelectedContacts()">Remove Selected</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addContactPopup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closeAddContactPopup()">&times;</span>
+            <h3>Add Contacts to Group</h3>
+            <form id="addContactForm">
+                <input type="text" id="searchInputAddContact" placeholder="Enter User Name or Number">
+                <div id="addContactList" class="scrollable-container"></div>
+                <button type="button" onclick="addSelectedContacts()">Add Selected Contact</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addAdminPopup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closeaddAdminPopup()">&times;</span>
+            <h3>Promote To Admin</h3>
+            <form id="addAdminForm">
+                <label>Select contacts to promote As admin:</label><br>
+                <div id="addAdminList" class="scrollable-container"></div>
+                <button type="button" onclick="promoteToAdmin()">Promote Selected Contact</button>
             </form>
         </div>
     </div>
