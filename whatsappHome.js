@@ -1,9 +1,42 @@
 const contactList = document.getElementById('contactList');
-document.getElementById('chatForm').addEventListener('submit', submitChat)
+const singleUserList = document.getElementById('singleUserList');
+document.getElementById('chatForm').addEventListener('submit', submitChat);
 let lastChatID = 0;
+const HOST = 'localhost';
+// const HOST = '16.16.201.152';
+
+//load create new popup and close popup
+document.getElementById('loadPopupbutton').addEventListener('click', loadCreateGroupPopupAndGetData);
+document.getElementById('closeGroupPopup').addEventListener('click', closePopup);
+document.getElementById('createGroup').addEventListener('click', createGroup);
+
+//load create single user popup and close popup
+document.getElementById('loadSingleUserPopupbutton').addEventListener('click', loadSingleUserPopup);
+document.getElementById('closeSingleUserPopup').addEventListener('click', closeSingleUserPopup);
+document.getElementById('createSingleUserGroup').addEventListener('click', createSingleUserGroup);
+
+//load remove contact popup and close popup
+document.getElementById('removeContactBtn').addEventListener('click', loadRemoveContactPopup);
+document.getElementById('closeRemoveContactPopup').addEventListener('click', closeRemoveContactPopup);
+document.getElementById('removeSelectedContacts').addEventListener('click', removeSelectedContacts);
+
+//load add contact popup and close popup
+document.getElementById('addContactBtn').addEventListener('click', loadAddContactPopup);
+document.getElementById('closeAddContactPopup').addEventListener('click', closeAddContactPopup);
+document.getElementById('addSelectedContacts').addEventListener('click', addSelectedContacts);
+
+//load promote to admin popup and close popup
+document.getElementById('addAdminBtn').addEventListener('click', loadAddAdminPopup);
+document.getElementById('closeaddAdminPopup').addEventListener('click', closeaddAdminPopup);
+document.getElementById('promoteToAdmin').addEventListener('click', promoteToAdmin);
+
+//delete group or chat
+document.getElementById('deleteGroup').addEventListener('click', deleteGroup);
 
 function decodeJwt(token) {
     console.log('inside decodeJwt...');
+    console.log("token  = " + token);
+
     const parts = token.split(".");
 
     if (parts.length != 3) {
@@ -18,18 +51,66 @@ function decodeJwt(token) {
     return { header, payload };
 }//decodeJwt
 
+function filterContacts(contactList, searchValue, appendContactContainer) {
+    console.log('inside filterContacts:');
+    console.log("contactList  = " + JSON.stringify(contactList));
+
+    const filteredContacts = contactList.filter(contact =>
+        contact.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        contact.phoneNumber.includes(searchValue)
+    );
+    // Display filtered contacts
+    displayContacts(filteredContacts, appendContactContainer);
+}//filterContacts
+
+//this will create a div with checkbx and list of users 
+function displayContacts(contactList, displayContainer) {
+    displayContainer.innerHTML = ''; // Clear any existing list
+
+    contactList.forEach(contact => {
+        const div = document.createElement('div');
+        div.classList.add('contact-item');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = contact.id;
+
+        const label = document.createElement('label');
+        label.htmlFor = contact.name;
+        label.textContent = `${contact.name}, Phone: ${contact.phoneNumber}`;
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        displayContainer.appendChild(div);
+    });
+}//displayContacts
+
 async function loadCreateGroupPopupAndGetData() {
     document.getElementById('groupPopup').style.display = 'block';
     document.getElementById('overlay').style.display = 'block';
 
     console.log('inside loadCreateGroupPopupAndGetData...');
+    //call the method to get all user data and append the user inside list
+    getAllUserData(contactList);
+}//loadCreateGroupPopupAndGetData
+
+function closePopup() {
+    document.getElementById('groupPopup').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
+
+async function getAllUserData(ListContainer) {
+    console.log('inside getAllUserData...');
+    let userid = localStorage.getItem('userid');
+    console.log('userid =' + userid);
+
     let token = localStorage.getItem('token');
     if (!token) {
         console.log("Token not found. Please log in.");
         return;
     }
     try {
-        const response = await axios.get(`http://localhost:3000/user/user-data`, {
+        const response = await axios.get(`http://${HOST}:3000/user/user-data`, {
             headers: {
                 "Authorization": token
             }
@@ -38,41 +119,146 @@ async function loadCreateGroupPopupAndGetData() {
         localStorage.setItem('chatData', JSON.stringify(chatData));
         console.log("chatData  = " + JSON.stringify(chatData));
 
-        for (let i = 0; i < chatData.length; i++) {
-            console.log("id  = " + chatData[i].id + " phone number : " + chatData[i].phoneNumber + " name = " + chatData[i].name);
+        // displayContacts(chatData, ListContainer);
 
-            // Create a container for each contact
-            const div = document.createElement('div');
-            div.classList.add('contact-item');
 
-            // Create checkbox
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = chatData[i].id;
+        // we will filter the search only for single user chat and not for group popup
+        if (ListContainer === singleUserContactList) {
+            console.log(" single User Contact List");
+            let filteredSingleUsers = chatData.filter(chat => chat.id != userid);
+            console.log("filteredSingleUsers  = " + JSON.stringify(filteredSingleUsers));
 
-            // Create label for the checkbox
-            const label = document.createElement('label');
-            label.htmlFor = checkbox.id;
-            label.textContent = `${chatData[i].name}, Phone Number: ${chatData[i].phoneNumber}`;
+            displayContacts(filteredSingleUsers, ListContainer);
 
-            // Append checkbox and label to container
-            div.appendChild(checkbox);
-            div.appendChild(label);
-
-            // Append container to the contact list
-            contactList.appendChild(div);
+            // Add event listener to the search input to filter contacts in real-time
+            document.getElementById('searchInputSingleUser').addEventListener('input', function () {
+                console.log("this.value = " + this.value);
+                filterContacts(chatData, this.value, singleUserContactList);
+            });
         }
+        else {
+            //display the data on popup for group
+            console.log(" contact List group");
+            displayContacts(chatData, ListContainer);
+        }
+
     }
     catch (err) {
         console.log("loadCreateGroupPopupAndGetData error = " + err);
     }
+}//getAllUserData
 
-}//loadCreateGroupPopupAndGetData
+async function loadSingleUserPopup() {
+    document.getElementById('singleUserPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
 
-function closePopup() {
-    document.getElementById('groupPopup').style.display = 'none';
+    console.log('inside loadSingleUserPopup...');
+    //call the method to get all user data and append the user inside list
+    const singleUserContactList = document.getElementById('singleUserContactList');
+    getAllUserData(singleUserContactList);
+}
+function closeSingleUserPopup() {
+    document.getElementById('singleUserPopup').style.display = 'none';
     document.getElementById('overlay').style.display = 'none';
 }
+
+async function createSingleUserGroup() {
+    console.log('inside createSingleUserGroup...');
+    const chatData = JSON.parse(localStorage.getItem('chatData'));
+    let userid = localStorage.getItem('userid');
+    console.log("userid  = " + userid);
+    console.log("chatData  = " + JSON.stringify(chatData));
+
+    const selectedContacts = [];
+    const checkboxes = document.querySelectorAll("#singleUserContactList input[type ='checkbox']:checked");
+    console.log("checkboxes  = " + JSON.stringify(checkboxes));
+
+    checkboxes.forEach(checkbox => {
+        const contactId = checkbox.id;
+        console.log("contactId  = " + contactId);
+        const contact = chatData.find(c => c.id === Number(contactId)); // Assuming chatData is available
+
+        if (contact) {
+            selectedContacts.push({
+                id: contact.id,
+                name: contact.name,
+                phoneNumber: contact.phoneNumber
+            });
+        }
+    });
+    console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+
+    if (selectedContacts.length > 0) {
+        //only one contact is needed for single user chat
+        if (selectedContacts.length == 1) {
+            console.log("selectedContacts  = " + JSON.stringify(selectedContacts));
+            let groupName = 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH';
+            let groupUserNames = selectedContacts[0].name;
+            let groupUserIDS = selectedContacts[0].id;
+            let groupPhoneNumbers = selectedContacts[0].phoneNumber;
+            console.log("groupName  = " + groupName);
+            console.log("groupUserNames  = " + groupUserNames);
+            console.log("groupUserIDS  = " + groupUserIDS);
+            console.log("groupPhoneNumbers  = " + groupPhoneNumbers);
+            const obj = {
+                groupName: groupName,
+                groupUserNames: groupUserNames,
+                groupUserIDS: groupUserIDS,
+                groupPhoneNumbers: groupPhoneNumbers,
+            };
+
+            let token = localStorage.getItem('token');
+            if (!token) {
+                alert("Token not found. Please log in.");
+                return;
+            }
+            try {
+                const res = await axios.post(`http://${HOST}:3000/groups/save-data`, obj, {
+                    headers: {
+                        "Authorization": token
+                    }
+                });
+                console.log("res  = " + JSON.stringify(res));
+                console.log('userId = ' + res.data.submittedGroupData.userId);
+                const data = res.data.submittedGroupData;
+                console.log("data  = " + JSON.stringify(data));
+
+                const li = document.createElement('li');
+                li.appendChild(document.createTextNode(`${res.data.submittedGroupData.groupUserNames}`));
+                li.style.cursor = "pointer";
+                li.addEventListener('click', () => {
+                    loadChatPage(data.id, data.groupUserIDS, data.groupName, data.groupUserNames);
+                })
+                singleUserList.appendChild(li);
+
+                //save the data of the user as admin 
+                saveAdminData(res.data.submittedGroupData.userId, res.data.submittedGroupData.id);
+
+                closeSingleUserPopup();
+            } catch (err) {
+                console.log("createSingleUserGroup error = " + err);
+                if (err.response) {
+                    console.log("Server responded with an error: ", err.response.data);
+                    alert(`Error: ${err.response.data.message}`);
+                }
+                else if (err.request) {
+                    console.log("No response received: ", err.request);
+                    alert('No response from the server. Please check your network connection.');
+                }
+                else {
+                    console.log("Error in setting up request: ", err.message);
+                }
+            }
+        }
+        else {
+            alert('Multiple contact selected,only select one contact');
+        }
+    }
+    else {
+        alert('No contact selected');
+    }
+
+}//createSingleUserGroup   
 
 async function createGroup() {
     console.log('inside createGroup...');
@@ -135,7 +321,7 @@ async function createGroup() {
             return;
         }
         try {
-            const res = await axios.post(`http://localhost:3000/groups/save-data`, obj, {
+            const res = await axios.post(`http://${HOST}:3000/groups/save-data`, obj, {
                 headers: {
                     "Authorization": token
                 }
@@ -147,10 +333,9 @@ async function createGroup() {
             li.appendChild(document.createTextNode(`${groupName} : ${res.data.submittedGroupData.groupUserNames}`));
             li.style.cursor = "pointer";
             li.addEventListener('click', () => {
-                loadChatPage(data.id, data.groupUserIDS, data.groupName);
+                loadChatPage(data.id, data.groupUserIDS, data.groupName, data.groupUserNames);
             })
             groupList.appendChild(li);
-            closePopup();
 
             saveAdminData(res.data.submittedGroupData.userId, res.data.submittedGroupData.id);
 
@@ -158,7 +343,7 @@ async function createGroup() {
 
             closePopup();
         } catch (err) {
-            console.log("createGroupInBackend error = " + err);
+            console.log("createGrou pInBackend error = " + err);
         }
 
     } else {
@@ -180,7 +365,7 @@ async function saveAdminData(groupAdminIDS, groupId) {
         return;
     }
     try {
-        const res = await axios.post(`http://localhost:3000/admin/save-admin`, obj, {
+        const res = await axios.post(`http://${HOST}:3000/admin/save-admin`, obj, {
             headers: {
                 "Authorization": token
             }
@@ -198,7 +383,7 @@ async function saveAdminData(groupAdminIDS, groupId) {
 window.document.addEventListener('DOMContentLoaded', async () => {
     console.log('inside DOMContentLoaded...');
     let token = localStorage.getItem('token');
-    // console.log('token:', token);
+    console.log('token:', token);
     const { payload } = decodeJwt(token);
     console.log('Payload:', payload);
     console.log('userid = ', payload.userid);
@@ -215,7 +400,7 @@ window.document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     try {
-        const res = await axios.get(`http://localhost:3000/groups/get-data`, {
+        const res = await axios.get(`http://${HOST}:3000/groups/get-data`, {
             headers: {
                 "Authorization": token
             }
@@ -232,8 +417,8 @@ window.document.addEventListener('DOMContentLoaded', async () => {
         console.log('savedGroupId:', savedGroupId);
         console.log('savedGroupUserID:', savedGroupUserID);
         console.log('savedGroupName:', savedGroupName);
-        
-        
+
+
         //this will reload the old chat and group when user refreshes the page
         if (savedGroupId && savedGroupUserID) {
             await loadChatPage(savedGroupId, savedGroupUserID, savedGroupName);
@@ -249,15 +434,31 @@ function printallGroupDataOnFrontend(data) {
     console.log('inside printallGroupDataOnFrontend...');
     // console.log("data  = " + JSON.stringify(data));
 
-    const li = document.createElement('li');
-    li.appendChild(document.createTextNode(`${data.groupName} : ${data.groupUserNames}`));
-    li.id = data.groupUserIDS;
-    li.style.cursor = "pointer";
-    li.addEventListener('click', () => {
-        loadChatPage(data.id, data.groupUserIDS, data.groupName);
-    })
+    //only undeleted data is shown on frontend
+    if (data.isDeleted == false) {
+        // before appending to frontend check if the data is for group or single user
+        if (data.groupName === 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
+            const li = document.createElement('li');
+            li.appendChild(document.createTextNode(`${data.groupUserNames}`));
+            li.id = data.groupUserIDS;
+            li.style.cursor = "pointer";
+            li.addEventListener('click', () => {
+                loadChatPage(data.id, data.groupUserIDS, data.groupName, data.groupUserNames);
+            })
 
-    groupList.appendChild(li);
+            singleUserList.appendChild(li);
+        }
+        else {
+            const li = document.createElement('li');
+            li.appendChild(document.createTextNode(`${data.groupName} : ${data.groupUserNames}`));
+            li.id = data.groupUserIDS;
+            li.style.cursor = "pointer";
+            li.addEventListener('click', () => {
+                loadChatPage(data.id, data.groupUserIDS, data.groupName, data.groupUserNames);
+            })
+            groupList.appendChild(li);
+        }
+    }
 }//printallGroupDataOnFrontend
 
 async function loadRemoveContactPopup() {
@@ -292,7 +493,7 @@ async function loadRemoveContactPopup() {
             }
             else {
                 try {
-                    const res = await axios.get(`http://localhost:3000/user/user-data`, {
+                    const res = await axios.get(`http://${HOST}:3000/user/user-data`, {
                         headers: {
                             "Authorization": token
                         }
@@ -368,7 +569,7 @@ async function removeSelectedContacts() {
 
             try {
                 //Send selectedContacts in the request body
-                const res = await axios.post(`http://localhost:3000/groups/delete-data`,
+                const res = await axios.post(`http://${HOST}:3000/groups/delete-data`,
                     {
                         groupId: groupId,
                         selectedContacts: selectedContacts
@@ -421,7 +622,7 @@ async function loadAddContactPopup() {
                 return;
             } else {
                 try {
-                    const res = await axios.get(`http://localhost:3000/user/user-data`, {
+                    const res = await axios.get(`http://${HOST}:3000/user/user-data`, {
                         headers: {
                             "Authorization": token
                         }
@@ -435,14 +636,14 @@ async function loadAddContactPopup() {
                     //aa it to the localstorage
                     localStorage.setItem('filteredUsersToAdd', JSON.stringify(filteredUsersToAdd));
 
-                    const contactListElement = document.getElementById('addContactList');
+                    const addContactList = document.getElementById('addContactList');
 
                     // Display the full contact list initially
-                    displayContacts(filteredUsersToAdd, contactListElement);
+                    displayContacts(filteredUsersToAdd, addContactList);
 
                     // Add event listener to the search input to filter contacts in real-time
                     document.getElementById('searchInputAddContact').addEventListener('input', function () {
-                        filterContacts(filteredUsersToAdd, this.value);
+                        filterContacts(filteredUsersToAdd, this.value, addContactList);
                     });
 
                 } catch (err) {
@@ -458,41 +659,6 @@ async function loadAddContactPopup() {
 
 
 }//loadAddContactPopup
-
-function displayContacts(contactList, displayContainer) {
-    // const contactListElement = document.getElementById('addContactList');
-    displayContainer.innerHTML = ''; // Clear any existing list
-
-    contactList.forEach(contact => {
-        const div = document.createElement('div');
-        div.classList.add('contact-item');
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = contact.id;
-
-        const label = document.createElement('label');
-        label.htmlFor = contact.name;
-        label.textContent = `${contact.name}, Phone: ${contact.phoneNumber}`;
-
-        div.appendChild(checkbox);
-        div.appendChild(label);
-        displayContainer.appendChild(div);
-    });
-}//displayContacts
-
-function filterContacts(contactList, searchValue) {
-    console.log('inside filterContacts:');
-    // console.log("searchValue  = " + searchValue);
-
-    const filteredContacts = contactList.filter(contact =>
-        contact.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        contact.phoneNumber.includes(searchValue)
-    );
-    const contactListElement = document.getElementById('addContactList');
-    // Display filtered contacts
-    displayContacts(filteredContacts, contactListElement);
-}//filterContacts
 
 async function addSelectedContacts() {
     console.log('inside addSelectedContacts...');
@@ -533,7 +699,7 @@ async function addSelectedContacts() {
             return;
         } else {
             try {
-                const res = await axios.post(`http://localhost:3000/groups/update-data`,
+                const res = await axios.post(`http://${HOST}:3000/groups/update-data`,
                     {
                         groupId: groupId,
                         selectedContacts: selectedContacts
@@ -600,7 +766,7 @@ async function loadAddAdminPopup() {
             else {
                 try {
 
-                    const res = await axios.get(`http://localhost:3000/user/user-data`, {
+                    const res = await axios.get(`http://${HOST}:3000/user/user-data`, {
                         headers: {
                             "Authorization": token
                         }
@@ -677,7 +843,7 @@ async function promoteToAdmin() {
             return;
         } else {
             try {
-                const res = await axios.post(`http://localhost:3000/admin/add-admin`,
+                const res = await axios.post(`http://${HOST}:3000/admin/add-admin`,
                     {
                         groupId: groupId,
                         selectedContacts: selectedContacts
@@ -699,18 +865,29 @@ async function promoteToAdmin() {
     }
 }//promoteToAdmin
 
-async function loadChatPage(groupId, groupUserID, groupName) {
+async function loadChatPage(groupId, groupUserID, groupName, groupUserNames) {
     const chatArea = document.getElementById('chatArea');
     const chatContent = document.getElementById('chatContent');
+    console.log('inside loadChatPage...');
+
     localStorage.setItem('groupId', groupId);
     localStorage.setItem('groupUserID', groupUserID);
     localStorage.setItem('groupName', groupName);
+    localStorage.setItem('groupUserNames', groupUserNames);
+    console.log('groupId = ' + groupId);
+    console.log('groupUserID = ' + groupUserID);
+    console.log('groupName = ' + groupName);
+    console.log('groupUserNames = ' + groupUserNames);
 
     chatContent.innerHTML = '';
 
     const h3Element = chatArea.querySelector('h3');
-    h3Element.textContent = `Group name: ${groupName} and Chat for GroupID: ${groupId}`;
-
+    if (groupName == 'q4X7nA6F8sT9mK3jY0dWvR1pZ5cG2bH') {
+        h3Element.textContent = `User : ${groupUserNames}`;
+    }
+    else {
+        h3Element.textContent = `Group : ${groupName}`;
+    }
 
     let token = localStorage.getItem('token');
     if (!token) {
@@ -722,7 +899,7 @@ async function loadChatPage(groupId, groupUserID, groupName) {
     }
     try {
 
-        const response = await axios.get(`http://localhost:3000/userLogin/chat?groupId=${groupId}`, {
+        const response = await axios.get(`http://${HOST}:3000/chat/get-chat?groupId=${groupId}`, {
             headers: {
                 "Authorization": token
             }
@@ -736,7 +913,7 @@ async function loadChatPage(groupId, groupUserID, groupName) {
             chatContent.appendChild(chatItem);
         });
 
-        const res = await axios.get(`http://localhost:3000/admin/get-admin?groupId=${groupId}`, {
+        const res = await axios.get(`http://${HOST}:3000/admin/get-admin?groupId=${groupId}`, {
             headers: {
                 "Authorization": token
             }
@@ -767,17 +944,65 @@ async function loadChatPage(groupId, groupUserID, groupName) {
             }
         }
 
-
     } catch (err) {
         console.log("Error fetching chat data:", err);
         chatContent.textContent = "Failed to load chat data.";
     }
 }
 
+async function deleteGroup() {
+    console.log('inside deleteGroup...');
+    let groupId = localStorage.getItem('groupId');
+    let groupUserID = localStorage.getItem('groupUserID');
+    let ADMIN = localStorage.getItem("ADMIN");
+    console.log("groupId  = " + groupId);
+    console.log("ADMIN  = " + ADMIN);
+
+    if (ADMIN === 'true') {
+        let token = localStorage.getItem('token');
+        if (!token) {
+            console.log("Token not found. Please log in.");
+            return;
+        }
+        if (!groupId) {
+            alert("Please select a group first");
+        }
+        let userInput = confirm("Are you sure you want to remove this gruop ?");
+        if (userInput) {
+            try {
+                const response = await axios.put(`http://${HOST}:3000/groups/update-group`,
+                    {
+                        groupId: groupId
+                    }
+                    , {
+                        headers: {
+                            "Authorization": token
+                        },
+
+                    });
+                console.log('delete response:', JSON.stringify(response));
+
+                if (response.data.message === "Data removed") {
+                    alert('Group removed Successfully');
+                }
+                else
+                    console.log("Group not deleted");
+
+            } catch (err) {
+                console.log("Error deleting group data:", err);
+            }
+
+        }
+    }
+    else {
+        console.log("ADMIN  = " + ADMIN);
+        alert('User is not a Admin in this group');
+    }
+
+}//deleteGroup
 
 async function submitChat(event) {
     event.preventDefault();
-    const chatContent = document.getElementById('chatContent');
     console.log('inside submitChat');
     let userChat = document.getElementById('userChat');
     console.log('userChat = ' + userChat.value);
@@ -797,26 +1022,21 @@ async function submitChat(event) {
             }
             if (groupId != NaN) {
 
-                const res = await axios.post(`http://localhost:3000/userLogin/chat`, obj, {
+                const response = await axios.post(`http://${HOST}:3000/chat/add-chat`, obj, {
                     headers: {
                         "Authorization": token
-                    },
-                    timeout: 5000 // Set timeout to 5 seconds
+                    }
                 });
                 // Log the response for debugging
                 console.log('response = ' + JSON.stringify(response.data.chatData));
                 // response = {"id":8,"chatName":"hi","groupId":"5","signupId":3,"updatedAt":"2024-09-05T16:10:51.704Z","createdAt":"2024-09-05T16:10:51.704Z"}
 
-                const chatitem = document.createElement('div');
-                chatitem.classList.add('chatDIV');
-                chatitem.textContent = response.data.chatData.chatName;
-                chatContent.appendChild(chatitem);
+                displayMessage(response.data.chatData.chatName);
+                //send the chat to backend socket
+                socket.emit('send-message', response.data.chatData.chatName);
                 //update the id 
                 lastChatID = response.data.chatData.id;
-
-                // appendRealTimeChatFrontend();
             }
-
         }
         catch (error) {
             if (error.response) {
@@ -834,3 +1054,21 @@ async function submitChat(event) {
     }
     userChat.value = "";
 }//submitChat
+
+function displayMessage(chat) {
+    const chatContent = document.getElementById('chatContent');
+    console.log('inside displayMessage');
+    console.log('chat = ' + chat);
+    const chatitem = document.createElement('div');
+    chatitem.classList.add('chatDIV');
+    chatitem.textContent = chat;
+    chatContent.appendChild(chatitem);
+}//displayMessage
+
+const socket = io(`http://localhost:3000`);
+
+// When a new message is received from the server
+socket.on('newMessage', function (message) {
+    console.log('Received message:', message);
+    displayMessage(message.chatName);
+});
